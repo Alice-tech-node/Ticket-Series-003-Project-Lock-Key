@@ -1,0 +1,45 @@
+# Postgres accepts ingress ONLY from pods labeled app=backend.
+# Because postgres has a NetworkPolicy selecting it with policyTypes:
+# [Ingress], and no rule here mentions "frontend", frontend traffic to
+# postgres is dropped by the default-deny baseline — this is the file
+# that actually satisfies "block frontend from reaching the DB directly."
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-to-postgres
+  namespace: asl-dev
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres           # governs POSTGRES's ingress
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# Egress half: permit backend -> postgres outbound.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-egress-to-postgres
+  namespace: asl-dev
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432

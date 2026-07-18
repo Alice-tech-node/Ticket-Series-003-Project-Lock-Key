@@ -1,0 +1,15 @@
+# Baseline: nothing in asl-dev can talk to anything, in or out,
+# unless a more specific NetworkPolicy explicitly allows it.
+# This is what turns "flat network, anyone can scan anyone" into
+# a real least-privilege posture. Everything below this file
+# punches specific, narrow holes in this wall.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: asl-dev
+spec:
+  podSelector: {}          # applies to every pod in the namespace
+  policyTypes:
+    - Ingress
+    - Egress

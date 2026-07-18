@@ -1,0 +1,21 @@
+# Default-deny blocks DNS too (it's just UDP/TCP 53 traffic to kube-dns).
+# Without this, pods can't resolve service names and everything breaks
+# in confusing ways. This hole is intentionally namespace-wide since
+# DNS resolution itself isn't a data-access risk.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: asl-dev
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}   # kube-dns lives in kube-system; allow to any ns on port 53
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

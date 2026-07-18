@@ -1,0 +1,45 @@
+# Frontend pods may INITIATE connections to backend pods on the API port.
+# Frontend gets no other egress inside the namespace (and no ingress from
+# anywhere except whatever exposes it externally, e.g. an Ingress
+# controller — add a separate rule for that if needed).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+  namespace: asl-dev
+spec:
+  podSelector:
+    matchLabels:
+      app: backend            # this policy governs BACKEND's ingress
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8080           # adjust to your backend's actual listen port
+---
+# Egress half: explicitly permit frontend -> backend outbound.
+# (Ingress rules alone don't grant the caller's egress under default-deny.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-egress-to-backend
+  namespace: asl-dev
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 8080
